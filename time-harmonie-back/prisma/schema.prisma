@@ -13,3 +13,171 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+model Users {
+  id               Int                  @id @default(autoincrement())
+  name             String
+  email            String              @unique
+  password         String
+  role             String
+  email_verified   Boolean             @default(false)
+  created_at       DateTime            @default(now())
+  Events           Events[]
+  Documents        Documents[]
+  Contacts         Contacts[]
+  UserConsents     UserConsents?
+  CalendarSyncSettings CalendarSyncSettings[]
+  AuditLogs        AuditLogs[]
+  DeletedAccountsLog DeletedAccountsLog[]
+  Preferences      Preferences?
+  WeeklySummaryLogs WeeklySummaryLogs[]
+  Notes            Notes[]
+  Availabilities   Availabilities[]
+}
+
+model Events {
+  id          Int        @id @default(autoincrement())
+  title       String
+  description String
+  start_time  DateTime
+  end_time    DateTime
+  location    String
+  recurrence  String
+  priority    String
+  user_id     Int
+  contact_id  Int?
+  category_id Int?
+  user        Users      @relation(fields: [user_id], references: [id])
+  contact     Contacts?  @relation(fields: [contact_id], references: [id])
+  category    Category?  @relation(fields: [category_id], references: [id])
+  Documents   Documents[]
+  Reminders   Reminders[]
+}
+
+model Availabilities {
+  id          Int      @id @default(autoincrement())
+  user_id     Int
+  day_of_week String
+  start_time  DateTime
+  end_time    DateTime
+  user        Users    @relation(fields: [user_id], references: [id])
+}
+
+model Documents {
+  id           Int      @id @default(autoincrement())
+  filename     String
+  filepath     String
+  uploaded_at  DateTime
+  type         String
+  isArchived   Boolean  @default(false)
+  user_id      Int
+  event_id     Int?
+  category_id  Int?
+  user         Users    @relation(fields: [user_id], references: [id])
+  event        Events?  @relation(fields: [event_id], references: [id])
+  category     Category? @relation(fields: [category_id], references: [id])
+}
+
+model Reminders {
+  id             Int      @id @default(autoincrement())
+  event_id       Int
+  reminder_time  DateTime
+  method         String
+  sent           Boolean  @default(false)
+  recurrence     String
+  event          Events   @relation(fields: [event_id], references: [id])
+}
+
+model Contacts {
+  id           Int     @id @default(autoincrement())
+  first_name   String
+  last_name    String
+  email        String
+  phone        String
+  company_name String
+  job_title    String
+  user_id      Int
+  category_id  Int?
+  user         Users   @relation(fields: [user_id], references: [id])
+  category     Category? @relation(fields: [category_id], references: [id])
+  Events       Events[]
+}
+
+model UserConsents {
+  id              Int      @id @default(autoincrement())
+  user_id         Int @unique
+  terms_accepted  Boolean
+  date_accepted   DateTime
+  last_logged_in  DateTime
+  user            Users    @relation(fields: [user_id], references: [id])
+}
+
+model DeletedAccountsLog {
+  id             Int      @id @default(autoincrement())
+  user_id        Int
+  deletion_date  DateTime
+  reason         String
+  user           Users    @relation(fields: [user_id], references: [id])
+}
+
+model CalendarSyncSettings {
+  id                  Int      @id @default(autoincrement())
+  user_id             Int
+  outlook_token       String
+  google_token        String
+  ical_url            String
+  sync_enabled        Boolean  @default(false)
+  google_sync_enabled Boolean  @default(false)
+  ical_sync_enabled   Boolean  @default(false)
+  last_sync_date      DateTime
+  user                Users    @relation(fields: [user_id], references: [id])
+}
+
+model AuditLogs {
+  id            Int      @id @default(autoincrement())
+  user_id       Int
+  action        String
+  target_table  String
+  timestamp     DateTime
+  ip_address    String
+  user          Users    @relation(fields: [user_id], references: [id])
+}
+
+model Preferences {
+  id                   Int     @id @default(autoincrement())
+  user_id              Int @unique
+  email_notifications  Boolean @default(true)
+  in_app_notifications Boolean @default(true)
+  reminders_enabled    Boolean @default(true)
+  weekly_summary       Boolean @default(true)
+  dark_mode            Boolean @default(false)
+  user                 Users   @relation(fields: [user_id], references: [id])
+}
+
+model Category {
+  id        Int         @id @default(autoincrement())
+  name      String
+  color     String
+  Events    Events[]
+  Contacts  Contacts[]
+  Documents Documents[]
+  Notes     Notes[]
+}
+
+model WeeklySummaryLogs {
+  id           Int      @id @default(autoincrement())
+  user_id      Int
+  sent_at      DateTime
+  events_count Int
+  user         Users    @relation(fields: [user_id], references: [id])
+}
+
+model Notes {
+  id           Int      @id @default(autoincrement())
+  content      String
+  created_at   DateTime
+  user_id      Int
+  category_id  Int?
+  user         Users    @relation(fields: [user_id], references: [id])
+  category     Category? @relation(fields: [category_id], references: [id])
+}
